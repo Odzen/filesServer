@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const puppeteer = require('puppeteer')
 const app = express()
@@ -10,11 +11,12 @@ app.get('/', (_req, res) => {
     message: 'Welcome to the HTML to PDF Conversion Service',
     status: 'online',
     version: '1.0.0',
+    port: process.env.PORT || 3000,
+    environment: process.env.NODE_ENV || 'development',
     endpoints: {
       'GET /': 'Service information and health check',
       'POST /files': 'Convert HTML string to PDF file (direct download)'
-    },
-    developer: 'Ready to convert your HTML to PDF! 👋'
+    }
   })
 })
 
@@ -141,10 +143,13 @@ app.use((req, res) => {
   })
 })
 
+// Use PORT from environment variable (required for GCP Cloud Run, Heroku, etc.)
+// Falls back to 3000 for local development
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`HTML to PDF Service running on port ${PORT}`)
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
   console.log(`Health check: http://localhost:${PORT}/`)
   console.log(`Convert endpoint: POST http://localhost:${PORT}/files`)
 })
