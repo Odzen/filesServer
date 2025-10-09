@@ -78,26 +78,35 @@ app.post('/files', async (req, res) => {
 
     const browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-web-security'
+      ]
     })
 
     try {
       const page = await browser.newPage()
       
       await page.setContent(html, { 
-        waitUntil: 'networkidle0',
-        timeout: 30000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       })
+
+      await page.evaluateHandle('document.fonts.ready')
 
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
+        preferCSSPageSize: false,
         margin: {
           top: '1cm',
           right: '1cm',
           bottom: '1cm',
           left: '1cm'
-        }
+        },
+        timeout: 60000
       })
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -115,7 +124,11 @@ app.post('/files', async (req, res) => {
     }
 
   } catch (error) {
-    console.error('PDF conversion error:', error)
+    console.error('PDF conversion error:', {
+      message: error.message,
+      stack: error.stack,
+      htmlLength: html?.length || 0
+    })
     
     res.status(500).json({
       error: 'Internal Server Error',
